@@ -2,12 +2,14 @@ package org.jenkinsci.plugins.publisherrunner;
 
 import hudson.*;
 import hudson.model.AbstractProject;
+import hudson.model.Computer;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Publisher;
 import hudson.tasks.Recorder;
+import hudson.tools.ToolInstallation;
 import hudson.util.ArgumentListBuilder;
 import hudson.util.FormValidation;
 import jenkins.tasks.SimpleBuildStep;
@@ -17,12 +19,14 @@ import org.kohsuke.stapler.QueryParameter;
 import javax.annotation.Nonnull;
 import javax.servlet.ServletException;
 import java.io.IOException;
+import java.io.PrintStream;
 
 /**
  * Created by vladdenisov on 28.03.2017.
  */
 public class ConfluencePublisherRunner extends Recorder implements SimpleBuildStep {
 
+    private static final String PLUGIN_DISPLAY_NAME = "Опубликовать результаты сборки на wiki";
     private final String runnable;
     private final String runnableConfigFile;
     private final String allureReportUrl;
@@ -36,16 +40,49 @@ public class ConfluencePublisherRunner extends Recorder implements SimpleBuildSt
         this.artifactsUrl = artifactsUrl;
     }
 
+    public PublisherInstallation getInstallation() {
+        if (runnable == null) return null;
+        for (PublisherInstallation installation : RECORDER_DESCRIPTOR.getInstallations()) {
+            if (runnable.equals(installation.getName())) {
+                return installation;
+            }
+        }
+        return null;
+    }
 
     @Override
     public void perform(@Nonnull Run<?, ?> run, @Nonnull FilePath filePath, @Nonnull Launcher launcher, @Nonnull TaskListener taskListener) throws InterruptedException, IOException {
         EnvVars buildCommonVariables = run.getEnvironment(taskListener);
-        taskListener.getLogger().printf("Список переменных окружения: %s\n", buildCommonVariables);
+        PrintStream currentLogger = taskListener.getLogger();
+        currentLogger.println("Список переменных окружения: ");
+        buildCommonVariables.forEach((k, v) -> currentLogger.printf("%s=%s\n", k, v));
+
+        PublisherInstallation publisher = getInstallation();
+        if (publisher == null) {
+            taskListener.fatalError("не нашли паблишер");
+            throw new RuntimeException("не нашли паблишер");
+        }
+        publisher.forNode(Computer.currentComputer().getNode(), taskListener);
+        publisher.forEnvironment(buildCommonVariables);
+
+        String pathToRunner = publisher.getHome();
+        FilePath exec = new FilePath(launcher.getChannel(), pathToRunner);
+
+        try {
+            if (!exec.exists()) {
+                taskListener.fatalError("не нашли путь к паблишеру " + pathToRunner);
+                throw new RuntimeException("не нашли путь к паблишеру " + pathToRunner);
+            }
+        } catch (IOException e) {
+            taskListener.fatalError("не удалось проверить путь к паблишеру " + pathToRunner);
+            throw new RuntimeException("не удалось проверить путь к паблишеру " + pathToRunner);
+        }
+
         String host = buildCommonVariables.get("host");
         String buildUrl = buildCommonVariables.getOrDefault("BUILD_URL", "");
 
         ArgumentListBuilder execBuilder = new ArgumentListBuilder();
-        execBuilder.add(getRunnable(), getRunnableConfigFile(), buildUrl + getAllureReportUrl(),
+        execBuilder.add(pathToRunner, pathToRunner + getRunnableConfigFile(), buildUrl + getAllureReportUrl(),
                 buildUrl + getArtifactsUrl(), host);
 
         try {
@@ -84,17 +121,35 @@ public class ConfluencePublisherRunner extends Recorder implements SimpleBuildSt
         return artifactsUrl;
     }
 
+    public BuildStepDescriptor<Publisher> getDescriptor() {
+        return RECORDER_DESCRIPTOR;
+    }
+
     @Extension
+    public static final DescriptorImpl RECORDER_DESCRIPTOR = new DescriptorImpl();
+
     public static final class DescriptorImpl extends BuildStepDescriptor<Publisher> {
+
+        @CopyOnWrite
+        private volatile PublisherInstallation[] publishers = new PublisherInstallation[0];
 
         /**
          * In order to load the persisted global configuration, you have to
          * call load() in the constructor.
          */
         public DescriptorImpl() {
+            super(ConfluencePublisherRunner.class);
             load();
         }
 
+        public PublisherInstallation[] getInstallations() {
+            return publishers;
+        }
+
+        public void setInstallations(PublisherInstallation... publishers) {
+            this.publishers = publishers;
+            save();
+        }
 
         public FormValidation doCheckRunnableConfigFile(@QueryParameter("runnable") String value)
                 throws IOException, ServletException {
@@ -137,11 +192,16 @@ public class ConfluencePublisherRunner extends Recorder implements SimpleBuildSt
             return true;
         }
 
+        public PublisherInstallation.DescriptorImpl getToolDescriptor() {
+            return ToolInstallation.all().get(PublisherInstallation.DescriptorImpl.class);
+        }
+
+
         /**
          * This human readable name is used in the configuration screen.
          */
         public String getDisplayName() {
-            return "Опубликовать результаты сборки на wiki";
+            return PLUGIN_DISPLAY_NAME;
         }
     }
 }
