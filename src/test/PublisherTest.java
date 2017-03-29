@@ -2,7 +2,6 @@ import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
 import org.apache.commons.io.FileUtils;
 import org.jenkinsci.plugins.publisherrunner.ConfluencePublisherRunner;
-import org.jenkinsci.plugins.publisherrunner.HelloWorldBuilder;
 import org.junit.Rule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
@@ -14,16 +13,6 @@ public class PublisherTest {
 
     @Rule
     public JenkinsRule jenkins = new JenkinsRule();
-
-    @Test
-    public void helloWordResult() throws Exception {
-        FreeStyleProject project = jenkins.createFreeStyleProject();
-        project.getBuildersList().add(new HelloWorldBuilder("Димон"));
-        FreeStyleBuild build = project.scheduleBuild2(0).get();
-        System.out.println(build.getDisplayName() + " completed");
-        String log = FileUtils.readFileToString(build.getLogFile());
-        System.out.println("Log is " + log);
-    }
 
     @Test
     public void publishResult() throws Exception {
