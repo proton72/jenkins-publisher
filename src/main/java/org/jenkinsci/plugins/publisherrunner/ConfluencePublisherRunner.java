@@ -82,7 +82,7 @@ public class ConfluencePublisherRunner extends Recorder implements SimpleBuildSt
         String buildUrl = buildCommonVariables.getOrDefault("BUILD_URL", "");
 
         ArgumentListBuilder execBuilder = new ArgumentListBuilder();
-        execBuilder.add(pathToRunner, pathToRunner + getRunnableConfigFile(), buildUrl + getAllureReportUrl(),
+        execBuilder.add(pathToRunner, getRunnableConfigFile(), buildUrl + getAllureReportUrl(),
                 buildUrl + getArtifactsUrl(), host);
 
         try {
