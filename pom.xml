@@ -18,14 +18,18 @@
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
-        <version>1.580.1</version>
+        <version>2.24</version>
         <relativePath/>
     </parent>
 
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>publisher-runner</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.1-SNAPSHOT</version>
     <packaging>hpi</packaging>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
 
     <name>Confluence Publishing Plugin</name>
     <description>Plugin to run binary for job result publishing</description>
@@ -47,14 +51,5 @@
             <url>http://repo.jenkins-ci.org/public/</url>
         </pluginRepository>
     </pluginRepositories>
-    <!-- If you want to depend on other plugins:
-    <dependencies>
-      <dependency>
-        <groupId>org.jenkins-ci.plugins</groupId>
-        <artifactId>credentials</artifactId>
-        <version>1.9.4</version>
-      </dependency>
-    </dependencies>
-    -->
 
 </project>
