@@ -1,4 +1,4 @@
 <?jelly escape-by-default='true'?>
 <div>
-  This plugin is used to publish test report to wiki by confluence publisher.
+  This plugin intended to publish test report to wiki by confluence publisher.
 </div>

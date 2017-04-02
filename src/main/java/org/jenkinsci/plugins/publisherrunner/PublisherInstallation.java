@@ -8,38 +8,46 @@ import hudson.model.TaskListener;
 import hudson.slaves.NodeSpecific;
 import hudson.tools.ToolDescriptor;
 import hudson.tools.ToolInstallation;
-import hudson.tools.ToolProperty;
+import hudson.util.FormValidation;
 import jenkins.model.Jenkins;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.QueryParameter;
 
+import javax.servlet.ServletException;
 import java.io.IOException;
-import java.util.List;
 
 /**
  * Created by vladdenisov on 29.03.2017.
  */
 public final class PublisherInstallation extends ToolInstallation implements EnvironmentSpecific<PublisherInstallation>, NodeSpecific<PublisherInstallation> {
 
+    private String configHome;
+
     @DataBoundConstructor
-    public PublisherInstallation(String name, String home, List<? extends ToolProperty<?>> properties) {
-        super(name, home, properties);
+    public PublisherInstallation(String name, String home, String configHome) {
+        super(name, home, null);
+        this.configHome = configHome;
     }
 
     @Override
     public PublisherInstallation forNode(Node node, TaskListener taskListener) throws IOException, InterruptedException {
-        return new PublisherInstallation(getName(), translateFor(node, taskListener), getProperties());
+        return new PublisherInstallation(getName(), translateFor(node, taskListener), getConfigHome());
     }
 
     @Override
     public PublisherInstallation forEnvironment(EnvVars envVars) {
-        return new PublisherInstallation(getName(), envVars.expand(getHome()), getProperties());
+        return new PublisherInstallation(getName(), envVars.expand(getHome()), getConfigHome());
+    }
+
+    public String getConfigHome() {
+        return configHome;
     }
 
     @Extension
     public static class DescriptorImpl extends ToolDescriptor<PublisherInstallation> {
 
         public String getDisplayName() {
-            return "Wiki publisher executable";
+            return Messages.PublisherInstallation_DisplayName();
         }
 
         @Override
@@ -54,6 +62,11 @@ public final class PublisherInstallation extends ToolInstallation implements Env
             Jenkins.getInstance()
                     .getDescriptorByType(ConfluencePublisherRunner.DescriptorImpl.class)
                     .setInstallations(installations);
+        }
+
+        public FormValidation doCheckConfigHome(@QueryParameter("configHome") String value)
+                throws IOException, ServletException {
+             return ValidationUtils.validateString(value);
         }
 
     }
