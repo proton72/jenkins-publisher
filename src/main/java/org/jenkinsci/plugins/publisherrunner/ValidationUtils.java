@@ -18,7 +18,7 @@ public class ValidationUtils {
         if (toValidate.length() == 0)
             return FormValidation.error(Messages.ValueIsAbsent());
         if (toValidate.length() < 4)
-            return FormValidation.warning(Messages.ValueIsAbsent());
+            return FormValidation.warning(Messages.ValueIsTooShort());
         return FormValidation.ok();
     }
 }
